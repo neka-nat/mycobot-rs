@@ -122,6 +122,15 @@ impl<T: Connection> MyCobotOperator<T> {
             Vec::new()
         }
     }
+    fn write_command(&mut self, genre: u8, command_data: &[u8]) -> Result<(), io::Error> {
+        let command = MyCobotOperator::<T>::concat_message(genre, command_data);
+        self.connection.write(&command)
+    }
+    fn write_command_and_receive(&mut self, genre: u8, command_data: &[u8]) -> Result<Vec<i16>, io::Error> {
+        let command = MyCobotOperator::<T>::concat_message(genre, command_data);
+        let res = self.connection.write_and_read(&command)?;
+        Ok(MyCobotOperator::<T>::process_received(&res, genre))
+    }
     pub fn version(&mut self) -> Result<String, io::Error> {
         let command = MyCobotOperator::<T>::concat_message(Command::VERSION, &Vec::<u8>::new());
         let res = self.connection.write_and_read(&command)?;
@@ -129,37 +138,24 @@ impl<T: Connection> MyCobotOperator<T> {
         Ok(version)
     }
     pub fn power_on(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::POWER_ON, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::POWER_ON, &[])
     }
     pub fn power_off(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::POWER_OFF, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::POWER_OFF, &[])
     }
     pub fn is_power_on(&mut self) -> Result<i32, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::IS_POWER_ON, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_POWER_ON);
+        let res = self.write_command_and_receive(Command::IS_POWER_ON, &[])?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn release_all_servos(&mut self) -> Result<(), io::Error> {
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::RELEASE_ALL_SERVOS, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::RELEASE_ALL_SERVOS, &[])
     }
     pub fn is_controller_connected(&mut self) -> Result<i32, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(
-            Command::IS_CONTROLLER_CONNECTED,
-            &Vec::<u8>::new(),
-        );
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::RELEASE_ALL_SERVOS);
+        let res = self.write_command_and_receive(Command::IS_CONTROLLER_CONNECTED, &[])?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn get_angles(&mut self) -> Result<Vec<f64>, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::GET_ANGLES, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::GET_ANGLES);
+        let res = self.write_command_and_receive(Command::GET_ANGLES, &[])?;
         Ok(res.into_iter().map(int_to_angle).collect::<Vec<_>>())
     }
     pub fn send_angle(&mut self, id: Angle, degree: f64, speed: u8) -> Result<(), io::Error> {
@@ -169,8 +165,7 @@ impl<T: Connection> MyCobotOperator<T> {
             &[speed],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::SEND_ANGLE, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SEND_ANGLE, &command_data)
     }
     pub fn send_angles(&mut self, degrees: &[f64], speed: u8) -> Result<(), io::Error> {
         let command_data = [
@@ -183,13 +178,10 @@ impl<T: Connection> MyCobotOperator<T> {
             &[speed],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::SEND_ANGLES, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SEND_ANGLES, &command_data)
     }
     pub fn get_coords(&mut self) -> Result<Vec<f64>, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::GET_COORDS, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::GET_COORDS);
+        let res = self.write_command_and_receive(Command::GET_COORDS, &[])?;
         Ok(int_vec_to_coords(&res))
     }
     pub fn send_coord(&mut self, id: Coord, coord: f64, speed: u8) -> Result<(), io::Error> {
@@ -199,8 +191,7 @@ impl<T: Connection> MyCobotOperator<T> {
             &[speed],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::SEND_COORD, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SEND_COORD, &command_data)
     }
     pub fn send_coords(&mut self, coords: &[f64], speed: u8, mode: u8) -> Result<(), io::Error> {
         let command_data = [
@@ -209,8 +200,7 @@ impl<T: Connection> MyCobotOperator<T> {
             &[mode],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::SEND_COORDS, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SEND_COORDS, &command_data)
     }
     pub fn is_in_angle_position(&mut self, degrees: &[f64]) -> Result<i32, io::Error> {
         let command_data = [
@@ -223,9 +213,7 @@ impl<T: Connection> MyCobotOperator<T> {
             &[0u8],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::IS_IN_POSITION, &command_data);
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_IN_POSITION);
+        let res = self.write_command_and_receive(Command::IS_IN_POSITION, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn is_in_coord_position(&mut self, coords: &[f64]) -> Result<i32, io::Error> {
@@ -234,15 +222,11 @@ impl<T: Connection> MyCobotOperator<T> {
             &[1u8],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::IS_IN_POSITION, &command_data);
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_IN_POSITION);
+        let res = self.write_command_and_receive(Command::IS_IN_POSITION, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn is_moving(&mut self) -> Result<i32, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::IS_MOVING, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_MOVING);
+        let res = self.write_command_and_receive(Command::IS_MOVING, &[])?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn jog_angle(
@@ -252,9 +236,7 @@ impl<T: Connection> MyCobotOperator<T> {
         speed: u8,
     ) -> Result<(), io::Error> {
         let command_data = [id as u8, direction as u8, speed];
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::JOG_ANGLE, &command_data.to_vec());
-        self.connection.write(&command)
+        self.write_command(Command::JOG_ANGLE, &command_data)
     }
     pub fn jog_coord(
         &mut self,
@@ -263,31 +245,23 @@ impl<T: Connection> MyCobotOperator<T> {
         speed: u8,
     ) -> Result<(), io::Error> {
         let command_data = [id as u8, direction as u8, speed];
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::JOG_COORD, &command_data.to_vec());
-        self.connection.write(&command)
+        self.write_command(Command::JOG_COORD, &command_data)
     }
     pub fn jog_stop(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::JOG_STOP, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::JOG_STOP, &[])
     }
     pub fn pause(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::PAUSE, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::PAUSE, &[])
     }
     pub fn is_paused(&mut self) -> Result<i32, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::IS_PAUSED, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_PAUSED);
+        let res = self.write_command_and_receive(Command::IS_PAUSED, &[])?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn resume(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::RESUME, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::RESUME, &[])
     }
     pub fn stop(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::STOP, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::STOP, &[])
     }
     pub fn set_encoder(&mut self, id: Angle, encoder: i16) -> Result<(), io::Error> {
         let command_data = [
@@ -295,111 +269,66 @@ impl<T: Connection> MyCobotOperator<T> {
             &MyCobotOperator::<T>::encode_int16(encoder)[..],
         ]
         .concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::SET_ENCODER, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SET_ENCODER, &command_data)
     }
     pub fn get_encoder(&mut self, id: Angle) -> Result<i32, io::Error> {
         let command_data = [id as u8];
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::GET_ENCODER, &command_data.to_vec());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::GET_ENCODER);
+        let res = self.write_command_and_receive(Command::GET_ENCODER, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn set_encoders(&mut self, encoders: &[i16], sp: u8) -> Result<(), io::Error> {
         let command_data = [&MyCobotOperator::<T>::encode_int16_vec(encoders)[..], &[sp]].concat();
-        let command = MyCobotOperator::<T>::concat_message(Command::SET_ENCODERS, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SET_ENCODERS, &command_data)
     }
     pub fn get_encoders(&mut self) -> Result<Vec<i16>, io::Error> {
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::GET_ENCODERS, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        Ok(MyCobotOperator::<T>::process_received(
-            &res,
-            Command::GET_ENCODER,
-        ))
+        self.write_command_and_receive(Command::GET_ENCODERS, &[])
     }
     pub fn get_speed(&mut self) -> Result<Vec<i16>, io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::GET_SPEED, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        Ok(MyCobotOperator::<T>::process_received(
-            &res,
-            Command::GET_SPEED,
-        ))
+        self.write_command_and_receive(Command::GET_SPEED, &[])
     }
     pub fn set_speed(&mut self, speed: u8) -> Result<(), io::Error> {
         let command_data = [speed];
-        let command = MyCobotOperator::<T>::concat_message(Command::SET_SPEED, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SET_SPEED, &command_data)
     }
     pub fn get_joint_min_angle(&mut self, id: Angle) -> Result<Vec<i16>, io::Error> {
         let command_data = [id as u8];
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::GET_JOINT_MIN_ANGLE, &command_data);
-        let res = self.connection.write_and_read(&command)?;
-        Ok(MyCobotOperator::<T>::process_received(
-            &res,
-            Command::GET_JOINT_MIN_ANGLE,
-        ))
+        self.write_command_and_receive(Command::GET_JOINT_MIN_ANGLE, &command_data)
     }
     pub fn get_joint_max_angle(&mut self, id: Angle) -> Result<Vec<i16>, io::Error> {
         let command_data = [id as u8];
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::GET_JOINT_MAX_ANGLE, &command_data);
-        let res = self.connection.write_and_read(&command)?;
-        Ok(MyCobotOperator::<T>::process_received(
-            &res,
-            Command::GET_JOINT_MAX_ANGLE,
-        ))
+        self.write_command_and_receive(Command::GET_JOINT_MAX_ANGLE, &command_data)
     }
     pub fn is_servo_enable(&mut self, id: Angle) -> Result<i32, io::Error> {
         let command_data = [id as u8];
-        let command = MyCobotOperator::<T>::concat_message(Command::IS_SERVO_ENABLE, &command_data);
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_SERVO_ENABLE);
+        let res = self.write_command_and_receive(Command::IS_SERVO_ENABLE, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn is_all_servo_enable(&mut self) -> Result<i32, io::Error> {
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::IS_ALL_SERVO_ENABLE, &Vec::<u8>::new());
-        let res = self.connection.write_and_read(&command)?;
-        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_ALL_SERVO_ENABLE);
+        let res = self.write_command_and_receive(Command::IS_ALL_SERVO_ENABLE, &[])?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn set_servo_data(&mut self, servo_no: u8, data_id: u8, value: u8) -> Result<(), io::Error> {
         let command_data = [servo_no, data_id, value];
-        let command = MyCobotOperator::<T>::concat_message(Command::SET_SERVO_DATA, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SET_SERVO_DATA, &command_data)
     }
     pub fn get_servo_data(&mut self, servo_no: u8, data_id: u8) -> Result<Vec<i16>, io::Error> {
         let command_data = [servo_no, data_id];
-        let command =
-            MyCobotOperator::<T>::concat_message(Command::GET_SERVO_DATA, &command_data);
-        let res = self.connection.write_and_read(&command)?;
-        Ok(MyCobotOperator::<T>::process_received(
-            &res,
-            Command::GET_SERVO_DATA,
-        ))
+        self.write_command_and_receive(Command::GET_SERVO_DATA, &command_data)
     }
     pub fn set_servo_calibration(&mut self) -> Result<(), io::Error> {
-        let command = MyCobotOperator::<T>::concat_message(Command::SET_SERVO_CALIBRATION, &Vec::<u8>::new());
-        self.connection.write(&command)
+        self.write_command(Command::SET_SERVO_CALIBRATION, &[])
     }
     pub fn release_servo(&mut self, servo_id: Angle) -> Result<(), io::Error> {
         let command_data = [servo_id as u8];
-        let command = MyCobotOperator::<T>::concat_message(Command::RELEASE_SERVO, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::RELEASE_SERVO, &command_data)
     }
     pub fn focus_servo(&mut self, servo_id: Angle) -> Result<(), io::Error> {
         let command_data = [servo_id as u8];
-        let command = MyCobotOperator::<T>::concat_message(Command::FOCUS_SERVO, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::FOCUS_SERVO, &command_data)
     }
     pub fn set_color(&mut self, r: u8, g:u8, b:u8) -> Result<(), io::Error> {
         let command_data = [r, g, b];
-        let command = MyCobotOperator::<T>::concat_message(Command::SET_COLOR, &command_data);
-        self.connection.write(&command)
+        self.write_command(Command::SET_COLOR, &command_data)
     }
 }
 
