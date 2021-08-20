@@ -210,7 +210,7 @@ impl<T: Connection> MyCobotOperator<T> {
         let command = MyCobotOperator::<T>::concat_message(Command::SEND_COORDS, &command_data);
         self.connection.write(&command)
     }
-    pub fn is_in_angle_position(&mut self, degrees: &[f64; 6]) -> Result<i32, io::Error> {
+    pub fn is_in_angle_position(&mut self, degrees: &[f64]) -> Result<i32, io::Error> {
         let command_data = [
             &MyCobotOperator::<T>::encode_int16_vec(
                 &degrees
@@ -302,6 +302,67 @@ impl<T: Connection> MyCobotOperator<T> {
             MyCobotOperator::<T>::concat_message(Command::GET_ENCODER, &command_data.to_vec());
         let res = self.connection.write_and_read(&command)?;
         let res = MyCobotOperator::<T>::process_received(&res, Command::GET_ENCODER);
+        Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+    pub fn set_encoders(&mut self, encoders: &[i16], sp: u8) -> Result<(), io::Error> {
+        let command_data = [&MyCobotOperator::<T>::encode_int16_vec(encoders)[..], &[sp]].concat();
+        let command = MyCobotOperator::<T>::concat_message(Command::SET_ENCODERS, &command_data);
+        self.connection.write(&command)
+    }
+    pub fn get_encoders(&mut self) -> Result<Vec<i16>, io::Error> {
+        let command =
+            MyCobotOperator::<T>::concat_message(Command::GET_ENCODERS, &Vec::<u8>::new());
+        let res = self.connection.write_and_read(&command)?;
+        Ok(MyCobotOperator::<T>::process_received(
+            &res,
+            Command::GET_ENCODER,
+        ))
+    }
+    pub fn get_speed(&mut self) -> Result<Vec<i16>, io::Error> {
+        let command = MyCobotOperator::<T>::concat_message(Command::GET_SPEED, &Vec::<u8>::new());
+        let res = self.connection.write_and_read(&command)?;
+        Ok(MyCobotOperator::<T>::process_received(
+            &res,
+            Command::GET_SPEED,
+        ))
+    }
+    pub fn set_speed(&mut self, speed: u8) -> Result<(), io::Error> {
+        let command_data = [speed];
+        let command = MyCobotOperator::<T>::concat_message(Command::SET_SPEED, &command_data);
+        self.connection.write(&command)
+    }
+    pub fn get_joint_min_angle(&mut self, id: Angle) -> Result<Vec<i16>, io::Error> {
+        let command_data = [id as u8];
+        let command =
+            MyCobotOperator::<T>::concat_message(Command::GET_JOINT_MIN_ANGLE, &command_data);
+        let res = self.connection.write_and_read(&command)?;
+        Ok(MyCobotOperator::<T>::process_received(
+            &res,
+            Command::GET_JOINT_MIN_ANGLE,
+        ))
+    }
+    pub fn get_joint_max_angle(&mut self, id: Angle) -> Result<Vec<i16>, io::Error> {
+        let command_data = [id as u8];
+        let command =
+            MyCobotOperator::<T>::concat_message(Command::GET_JOINT_MAX_ANGLE, &command_data);
+        let res = self.connection.write_and_read(&command)?;
+        Ok(MyCobotOperator::<T>::process_received(
+            &res,
+            Command::GET_JOINT_MAX_ANGLE,
+        ))
+    }
+    pub fn is_servo_enable(&mut self, id: Angle) -> Result<i32, io::Error> {
+        let command_data = [id as u8];
+        let command = MyCobotOperator::<T>::concat_message(Command::IS_SERVO_ENABLE, &command_data);
+        let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_SERVO_ENABLE);
+        Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+    pub fn is_all_servo_enable(&mut self) -> Result<i32, io::Error> {
+        let command =
+            MyCobotOperator::<T>::concat_message(Command::IS_ALL_SERVO_ENABLE, &Vec::<u8>::new());
+        let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_ALL_SERVO_ENABLE);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
 }
