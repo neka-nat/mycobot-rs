@@ -94,30 +94,32 @@ impl<T: Connection> MyCobotOperator<T> {
         data[pos] == Command::HEADER && data[pos + 1] == Command::HEADER
     }
     fn process_received(data: &[u8], genre: u8) -> Vec<i16> {
+        if data.is_empty() {
+            return Vec::new();
+        }
         let some_idx =
             (0..(data.len() - 1)).position(|i| MyCobotOperator::<T>::is_frame_header(data, i));
         if let Some(idx) = some_idx {
             let data_len = (data[idx + 2] - 2) as usize;
             let cmd_id = data[idx + 3];
             if cmd_id != genre {
-                Vec::<i16>::new()
-            } else {
-                let data_pos = idx + 4;
-                let valid_data = &data[data_pos..(data_pos + data_len)];
-                match data_len {
-                    12 => MyCobotOperator::<T>::decode_int16_vec(valid_data),
-                    2 => {
-                        if genre == Command::IS_SERVO_ENABLE {
-                            [MyCobotOperator::<T>::decode_int8(&valid_data[1..2]) as i16].to_vec()
-                        } else {
-                            [MyCobotOperator::<T>::decode_int16(valid_data)].to_vec()
-                        }
+                return Vec::new();
+            }
+            let data_pos = idx + 4;
+            let valid_data = &data[data_pos..(data_pos + data_len)];
+            match data_len {
+                12 => MyCobotOperator::<T>::decode_int16_vec(valid_data),
+                2 => {
+                    if genre == Command::IS_SERVO_ENABLE {
+                        [MyCobotOperator::<T>::decode_int8(&valid_data[1..2]) as i16].to_vec()
+                    } else {
+                        [MyCobotOperator::<T>::decode_int16(valid_data)].to_vec()
                     }
-                    _ => [MyCobotOperator::<T>::decode_int8(valid_data) as i16].to_vec(),
                 }
+                _ => [MyCobotOperator::<T>::decode_int8(valid_data) as i16].to_vec(),
             }
         } else {
-            Vec::<i16>::new()
+            Vec::new()
         }
     }
     pub fn version(&mut self) -> Result<String, io::Error> {
@@ -364,6 +366,40 @@ impl<T: Connection> MyCobotOperator<T> {
         let res = self.connection.write_and_read(&command)?;
         let res = MyCobotOperator::<T>::process_received(&res, Command::IS_ALL_SERVO_ENABLE);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+    pub fn set_servo_data(&mut self, servo_no: u8, data_id: u8, value: u8) -> Result<(), io::Error> {
+        let command_data = [servo_no, data_id, value];
+        let command = MyCobotOperator::<T>::concat_message(Command::SET_SERVO_DATA, &command_data);
+        self.connection.write(&command)
+    }
+    pub fn get_servo_data(&mut self, servo_no: u8, data_id: u8) -> Result<Vec<i16>, io::Error> {
+        let command_data = [servo_no, data_id];
+        let command =
+            MyCobotOperator::<T>::concat_message(Command::GET_SERVO_DATA, &command_data);
+        let res = self.connection.write_and_read(&command)?;
+        Ok(MyCobotOperator::<T>::process_received(
+            &res,
+            Command::GET_SERVO_DATA,
+        ))
+    }
+    pub fn set_servo_calibration(&mut self) -> Result<(), io::Error> {
+        let command = MyCobotOperator::<T>::concat_message(Command::SET_SERVO_CALIBRATION, &Vec::<u8>::new());
+        self.connection.write(&command)
+    }
+    pub fn release_servo(&mut self, servo_id: Angle) -> Result<(), io::Error> {
+        let command_data = [servo_id as u8];
+        let command = MyCobotOperator::<T>::concat_message(Command::RELEASE_SERVO, &command_data);
+        self.connection.write(&command)
+    }
+    pub fn focus_servo(&mut self, servo_id: Angle) -> Result<(), io::Error> {
+        let command_data = [servo_id as u8];
+        let command = MyCobotOperator::<T>::concat_message(Command::FOCUS_SERVO, &command_data);
+        self.connection.write(&command)
+    }
+    pub fn set_color(&mut self, r: u8, g:u8, b:u8) -> Result<(), io::Error> {
+        let command_data = [r, g, b];
+        let command = MyCobotOperator::<T>::concat_message(Command::SET_COLOR, &command_data);
+        self.connection.write(&command)
     }
 }
 
