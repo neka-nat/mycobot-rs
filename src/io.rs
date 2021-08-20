@@ -29,9 +29,15 @@ impl Connection for Serial {
         Ok(())
     }
     fn read(&mut self) -> Result<Vec<u8>, io::Error> {
-        let mut buf = vec![0; 32];
-        self.port.read_exact(buf.as_mut_slice())?;
-        Ok(buf)
+        let mut data = Vec::<u8>::new();
+        loop {
+            let mut buf = vec![0u8; 1];
+            match self.port.read_exact(buf.as_mut_slice()) {
+                Ok(_t) => data.extend(buf),
+                Err(_e) => break,
+            }
+        }
+        Ok(data)
     }
     fn write_and_read(&mut self, command: &[u8]) -> Result<Vec<u8>, io::Error> {
         self.write(command)?;

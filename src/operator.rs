@@ -137,6 +137,7 @@ impl<T: Connection> MyCobotOperator<T> {
     pub fn is_power_on(&mut self) -> Result<i32, io::Error> {
         let command = MyCobotOperator::<T>::concat_message(Command::IS_POWER_ON, &Vec::<u8>::new());
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_POWER_ON);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn release_all_servos(&mut self) -> Result<(), io::Error> {
@@ -150,6 +151,7 @@ impl<T: Connection> MyCobotOperator<T> {
             &Vec::<u8>::new(),
         );
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::RELEASE_ALL_SERVOS);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn get_angles(&mut self) -> Result<Vec<f64>, io::Error> {
@@ -221,6 +223,7 @@ impl<T: Connection> MyCobotOperator<T> {
         .concat();
         let command = MyCobotOperator::<T>::concat_message(Command::IS_IN_POSITION, &command_data);
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_IN_POSITION);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn is_in_coord_position(&mut self, coords: &[f64]) -> Result<i32, io::Error> {
@@ -231,11 +234,13 @@ impl<T: Connection> MyCobotOperator<T> {
         .concat();
         let command = MyCobotOperator::<T>::concat_message(Command::IS_IN_POSITION, &command_data);
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_IN_POSITION);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn is_moving(&mut self) -> Result<i32, io::Error> {
         let command = MyCobotOperator::<T>::concat_message(Command::IS_MOVING, &Vec::<u8>::new());
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_MOVING);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn jog_angle(
@@ -271,6 +276,7 @@ impl<T: Connection> MyCobotOperator<T> {
     pub fn is_paused(&mut self) -> Result<i32, io::Error> {
         let command = MyCobotOperator::<T>::concat_message(Command::IS_PAUSED, &Vec::<u8>::new());
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::IS_PAUSED);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn resume(&mut self) -> Result<(), io::Error> {
@@ -295,6 +301,7 @@ impl<T: Connection> MyCobotOperator<T> {
         let command =
             MyCobotOperator::<T>::concat_message(Command::GET_ENCODER, &command_data.to_vec());
         let res = self.connection.write_and_read(&command)?;
+        let res = MyCobotOperator::<T>::process_received(&res, Command::GET_ENCODER);
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
 }
