@@ -1,5 +1,5 @@
 use super::common::*;
-use super::io::Connection;
+use super::io::{Connection, Serial};
 use byteorder::{BigEndian, ByteOrder};
 use std::io;
 use std::marker::PhantomData;
@@ -53,7 +53,7 @@ pub struct MyCobotOperator<T: Connection> {
 }
 
 impl<T: Connection> MyCobotOperator<T> {
-    pub fn new(connection: T) -> MyCobotOperator<T> {
+    pub fn from_connection(connection: T) -> MyCobotOperator<T> {
         MyCobotOperator {
             connection,
             _marker: PhantomData,
@@ -296,5 +296,14 @@ impl<T: Connection> MyCobotOperator<T> {
             MyCobotOperator::<T>::concat_message(Command::GET_ENCODER, &command_data.to_vec());
         let res = self.connection.write_and_read(&command)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+}
+
+pub type MyCobotSerialOperator = MyCobotOperator<Serial>;
+
+impl MyCobotSerialOperator {
+    pub fn new(port: &str, baudrate: u32) -> MyCobotSerialOperator {
+        let connection = Serial::new(port, baudrate);
+        MyCobotSerialOperator::from_connection(connection)
     }
 }
