@@ -330,6 +330,19 @@ impl<T: Connection> MyCobotOperator<T> {
         let command_data = [r, g, b];
         self.write_command(Command::SET_COLOR, &command_data)
     }
+    pub fn set_pin_mode(&mut self, pin_no: u8, pin_mode: PinMode) -> Result<(), io::Error> {
+        let command_data = [pin_no, pin_mode as u8];
+        self.write_command(Command::SET_PIN_MODE, &command_data)
+    }
+    pub fn set_digital_output(&mut self, pin_no: u8, pin_signal: bool) -> Result<(), io::Error> {
+        let command_data = [pin_no, pin_signal as u8];
+        self.write_command(Command::SET_DIGITAL_OUTPUT, &command_data)
+    }
+    pub fn get_digital_output(&mut self, pin_no: u8) -> Result<i32, io::Error> {
+        let command_data = [pin_no];
+        let res = self.write_command_and_receive(Command::GET_DIGITAL_OUTPUT, &command_data)?;
+        Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
 }
 
 pub type MyCobotSerialOperator = MyCobotOperator<Serial>;

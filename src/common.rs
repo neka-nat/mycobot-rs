@@ -27,6 +27,12 @@ pub enum Mode {
     Linear = 2,
 }
 
+pub enum PinMode {
+    Input = 0,
+    Output = 1,
+    InputPullup = 2,
+}
+
 #[non_exhaustive]
 pub struct Command;
 
