@@ -1,51 +1,8 @@
 use super::common::*;
 use super::io::{Connection, Serial};
-use byteorder::{BigEndian, ByteOrder};
+use super::utils::*;
 use std::io;
 use std::marker::PhantomData;
-
-fn angle_to_int(degree: f64) -> i16 {
-    (degree * 100.0) as i16
-}
-
-fn coord_to_int(coord: f64) -> i16 {
-    (coord * 10.0) as i16
-}
-
-fn int_to_angle(val: i16) -> f64 {
-    (val as f64) / 100.0
-}
-
-fn int_to_coord(val: i16) -> f64 {
-    (val as f64) / 10.0
-}
-
-fn coords_to_int_vec(coords: &[f64]) -> Vec<i16> {
-    coords
-        .iter()
-        .enumerate()
-        .map(|(i, coord)| {
-            if i < 3 {
-                coord_to_int(*coord)
-            } else {
-                angle_to_int(*coord)
-            }
-        })
-        .collect()
-}
-
-fn int_vec_to_coords(vals: &[i16]) -> Vec<f64> {
-    vals.iter()
-        .enumerate()
-        .map(|(i, v)| {
-            if i < 3 {
-                int_to_coord(*v)
-            } else {
-                int_to_angle(*v)
-            }
-        })
-        .collect()
-}
 
 pub struct MyCobotOperator<T: Connection> {
     connection: T,
@@ -58,32 +15,6 @@ impl<T: Connection> MyCobotOperator<T> {
             connection,
             _marker: PhantomData,
         }
-    }
-    fn encode_int16(data: i16) -> [u8; 2] {
-        let mut buf = [0u8; 2];
-        BigEndian::write_i16(&mut buf, data);
-        buf
-    }
-    fn encode_int16_vec(data: &[i16]) -> Vec<u8> {
-        let mut buf = Vec::<u8>::new();
-        buf.resize(data.len() * 2, 0);
-        for i in 0..data.len() {
-            BigEndian::write_i16(&mut buf[(2 * i)..(2 * i + 2)], data[i]);
-        }
-        buf
-    }
-    fn decode_int16(data: &[u8]) -> i16 {
-        BigEndian::read_i16(&data[0..2])
-    }
-    fn decode_int8(data: &[u8]) -> i8 {
-        i8::from_be_bytes([data[0]])
-    }
-    fn decode_int16_vec(data: &[u8]) -> Vec<i16> {
-        let mut res = Vec::<i16>::new();
-        for idx in (0..(data.len())).step_by(2) {
-            res.push(BigEndian::read_i16(&data[idx..(idx + 2)]));
-        }
-        res
     }
     fn concat_message(genre: u8, command_data: &[u8]) -> Vec<u8> {
         let len = 2 + command_data.len();
@@ -108,15 +39,15 @@ impl<T: Connection> MyCobotOperator<T> {
             let data_pos = idx + 4;
             let valid_data = &data[data_pos..(data_pos + data_len)];
             match data_len {
-                12 => MyCobotOperator::<T>::decode_int16_vec(valid_data),
+                12 => decode_int16_vec(valid_data),
                 2 => {
                     if genre == Command::IS_SERVO_ENABLE {
-                        [MyCobotOperator::<T>::decode_int8(&valid_data[1..2]) as i16].to_vec()
+                        [decode_int8(&valid_data[1..2]) as i16].to_vec()
                     } else {
-                        [MyCobotOperator::<T>::decode_int16(valid_data)].to_vec()
+                        [decode_int16(valid_data)].to_vec()
                     }
                 }
-                _ => [MyCobotOperator::<T>::decode_int8(valid_data) as i16].to_vec(),
+                _ => [decode_int8(valid_data) as i16].to_vec(),
             }
         } else {
             Vec::new()
@@ -126,7 +57,11 @@ impl<T: Connection> MyCobotOperator<T> {
         let command = MyCobotOperator::<T>::concat_message(genre, command_data);
         self.connection.write(&command)
     }
-    fn write_command_and_receive(&mut self, genre: u8, command_data: &[u8]) -> Result<Vec<i16>, io::Error> {
+    fn write_command_and_receive(
+        &mut self,
+        genre: u8,
+        command_data: &[u8],
+    ) -> Result<Vec<i16>, io::Error> {
         let command = MyCobotOperator::<T>::concat_message(genre, command_data);
         let res = self.connection.write_and_read(&command)?;
         Ok(MyCobotOperator::<T>::process_received(&res, genre))
@@ -161,7 +96,7 @@ impl<T: Connection> MyCobotOperator<T> {
     pub fn send_angle(&mut self, id: Angle, degree: f64, speed: u8) -> Result<(), io::Error> {
         let command_data = [
             &[id as u8],
-            &MyCobotOperator::<T>::encode_int16(angle_to_int(degree))[..],
+            &encode_int16(angle_to_int(degree))[..],
             &[speed],
         ]
         .concat();
@@ -169,7 +104,7 @@ impl<T: Connection> MyCobotOperator<T> {
     }
     pub fn send_angles(&mut self, degrees: &[f64], speed: u8) -> Result<(), io::Error> {
         let command_data = [
-            &MyCobotOperator::<T>::encode_int16_vec(
+            &encode_int16_vec(
                 &degrees
                     .iter()
                     .map(|deg| angle_to_int(*deg))
@@ -187,7 +122,7 @@ impl<T: Connection> MyCobotOperator<T> {
     pub fn send_coord(&mut self, id: Coord, coord: f64, speed: u8) -> Result<(), io::Error> {
         let command_data = [
             &[id as u8 - 1],
-            &MyCobotOperator::<T>::encode_int16(coord_to_int(coord))[..],
+            &encode_int16(coord_to_int(coord))[..],
             &[speed],
         ]
         .concat();
@@ -195,7 +130,7 @@ impl<T: Connection> MyCobotOperator<T> {
     }
     pub fn send_coords(&mut self, coords: &[f64], speed: u8, mode: u8) -> Result<(), io::Error> {
         let command_data = [
-            &MyCobotOperator::<T>::encode_int16_vec(&coords_to_int_vec(coords))[..],
+            &encode_int16_vec(&coords_to_int_vec(coords))[..],
             &[speed],
             &[mode],
         ]
@@ -204,7 +139,7 @@ impl<T: Connection> MyCobotOperator<T> {
     }
     pub fn is_in_angle_position(&mut self, degrees: &[f64]) -> Result<i32, io::Error> {
         let command_data = [
-            &MyCobotOperator::<T>::encode_int16_vec(
+            &encode_int16_vec(
                 &degrees
                     .iter()
                     .map(|deg| angle_to_int(*deg))
@@ -217,11 +152,7 @@ impl<T: Connection> MyCobotOperator<T> {
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn is_in_coord_position(&mut self, coords: &[f64]) -> Result<i32, io::Error> {
-        let command_data = [
-            &MyCobotOperator::<T>::encode_int16_vec(&coords_to_int_vec(coords))[..],
-            &[1u8],
-        ]
-        .concat();
+        let command_data = [&encode_int16_vec(&coords_to_int_vec(coords))[..], &[1u8]].concat();
         let res = self.write_command_and_receive(Command::IS_IN_POSITION, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
@@ -264,11 +195,7 @@ impl<T: Connection> MyCobotOperator<T> {
         self.write_command(Command::STOP, &[])
     }
     pub fn set_encoder(&mut self, id: Angle, encoder: i16) -> Result<(), io::Error> {
-        let command_data = [
-            &[id as u8],
-            &MyCobotOperator::<T>::encode_int16(encoder)[..],
-        ]
-        .concat();
+        let command_data = [&[id as u8], &encode_int16(encoder)[..]].concat();
         self.write_command(Command::SET_ENCODER, &command_data)
     }
     pub fn get_encoder(&mut self, id: Angle) -> Result<i32, io::Error> {
@@ -277,7 +204,7 @@ impl<T: Connection> MyCobotOperator<T> {
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
     pub fn set_encoders(&mut self, encoders: &[i16], sp: u8) -> Result<(), io::Error> {
-        let command_data = [&MyCobotOperator::<T>::encode_int16_vec(encoders)[..], &[sp]].concat();
+        let command_data = [&encode_int16_vec(encoders)[..], &[sp]].concat();
         self.write_command(Command::SET_ENCODERS, &command_data)
     }
     pub fn get_encoders(&mut self) -> Result<Vec<i16>, io::Error> {
@@ -307,7 +234,12 @@ impl<T: Connection> MyCobotOperator<T> {
         let res = self.write_command_and_receive(Command::IS_ALL_SERVO_ENABLE, &[])?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
-    pub fn set_servo_data(&mut self, servo_no: u8, data_id: u8, value: u8) -> Result<(), io::Error> {
+    pub fn set_servo_data(
+        &mut self,
+        servo_no: u8,
+        data_id: u8,
+        value: u8,
+    ) -> Result<(), io::Error> {
         let command_data = [servo_no, data_id, value];
         self.write_command(Command::SET_SERVO_DATA, &command_data)
     }
@@ -326,7 +258,7 @@ impl<T: Connection> MyCobotOperator<T> {
         let command_data = [servo_id as u8];
         self.write_command(Command::FOCUS_SERVO, &command_data)
     }
-    pub fn set_color(&mut self, r: u8, g:u8, b:u8) -> Result<(), io::Error> {
+    pub fn set_color(&mut self, r: u8, g: u8, b: u8) -> Result<(), io::Error> {
         let command_data = [r, g, b];
         self.write_command(Command::SET_COLOR, &command_data)
     }
