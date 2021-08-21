@@ -1,6 +1,6 @@
 # mycobot-rs
 
-Mycobot API in Rust.
+MyCobot API in Rust.
 ## Getting started
 
 ```rust

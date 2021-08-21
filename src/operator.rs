@@ -308,6 +308,7 @@ impl<T: Connection> MyCobotOperator<T> {
     }
 }
 
+/// MyCobot Rust API
 pub type MyCobotSerialOperator = MyCobotOperator<Serial>;
 
 impl MyCobotSerialOperator {

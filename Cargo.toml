@@ -4,10 +4,12 @@ version = "0.1.0"
 authors = ["nekanat <nekanat.stock@gmail.com>"]
 edition = "2018"
 license = "MIT"
-description = "Mycobot API in Rust."
+description = "MyCobot API in Rust."
 readme = "README.md"
+documentation = "http://neka-nat.github.io/mycobot-rs/mycobot/"
 homepage = "https://github.com/neka-nat/mycobot-rs"
 repository = "https://github.com/neka-nat/mycobot-rs"
+keywords = ["robotics", "mycobot"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
