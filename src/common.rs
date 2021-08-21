@@ -33,6 +33,11 @@ pub enum PinMode {
     InputPullup = 2,
 }
 
+pub enum GripperState {
+    Open = 0,
+    Close = 1,
+}
+
 #[non_exhaustive]
 pub struct Command;
 
@@ -89,9 +94,9 @@ impl Command {
 
     pub const SET_PIN_MODE: u8 = 0x60;
     pub const SET_DIGITAL_OUTPUT: u8 = 0x61;
-    pub const GET_DIGITAL_OUTPUT: u8 = 0x62;
+    pub const GET_DIGITAL_INPUT: u8 = 0x62;
     pub const SET_PWM_MODE: u8 = 0x63;
-    pub const GET_PWM_MODE: u8 = 0x64;
+    pub const SET_PWM_OUTPUT: u8 = 0x64;
     pub const GET_GRIPPER_VALUE: u8 = 0x65;
     pub const SET_GRIPPER_STATE: u8 = 0x66;
     pub const SET_GRIPPER_VALUE: u8 = 0x67;

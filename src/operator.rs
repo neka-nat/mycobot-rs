@@ -270,9 +270,40 @@ impl<T: Connection> MyCobotOperator<T> {
         let command_data = [pin_no, pin_signal as u8];
         self.write_command(Command::SET_DIGITAL_OUTPUT, &command_data)
     }
-    pub fn get_digital_output(&mut self, pin_no: u8) -> Result<i32, io::Error> {
+    pub fn get_digital_intput(&mut self, pin_no: u8) -> Result<i32, io::Error> {
         let command_data = [pin_no];
-        let res = self.write_command_and_receive(Command::GET_DIGITAL_OUTPUT, &command_data)?;
+        let res = self.write_command_and_receive(Command::GET_DIGITAL_INPUT, &command_data)?;
+        Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+    pub fn set_pwm_output(&mut self, channel: u8, frequency: i16, pin_val: u8) -> Result<(), io::Error> {
+        let command_data = [&[channel], &encode_int16(frequency)[..], &[pin_val]].concat();
+        self.write_command(Command::SET_PWM_OUTPUT, &command_data)
+    }
+    pub fn get_gripper_value(&mut self) -> Result<Vec<i16>, io::Error> {
+        self.write_command_and_receive(Command::GET_DIGITAL_INPUT, &[])
+    }
+    pub fn set_gripper_state(&mut self, state: GripperState, speed: u8) -> Result<(), io::Error> {
+        let command_data = [state as u8, speed];
+        self.write_command(Command::SET_GRIPPER_STATE, &command_data)
+    }
+    pub fn set_gripper_value(&mut self, value: u8, speed: u8) -> Result<(), io::Error> {
+        let command_data = [value, speed];
+        self.write_command(Command::SET_GRIPPER_VALUE, &command_data)
+    }
+    pub fn set_gripper_ini(&mut self) -> Result<(), io::Error> {
+        self.write_command(Command::SET_GRIPPER_INI, &[])
+    }
+    pub fn is_gripper_moving(&mut self) -> Result<i32, io::Error> {
+        let res = self.write_command_and_receive(Command::IS_GRIPPER_MOVING, &[])?;
+        Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+    pub fn set_basic_output(&mut self, pin_no: u8, pin_signal: bool) -> Result<(), io::Error> {
+        let command_data = [pin_no, pin_signal as u8];
+        self.write_command(Command::SET_BASIC_OUTPUT, &command_data)
+    }
+    pub fn get_basic_input(&mut self, pin_no: u8) -> Result<i32, io::Error> {
+        let command_data = [pin_no];
+        let res = self.write_command_and_receive(Command::GET_BASIC_INPUT, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
 }
