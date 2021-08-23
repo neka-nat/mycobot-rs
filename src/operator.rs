@@ -3,6 +3,8 @@ use super::io::{Connection, Serial};
 use super::utils::*;
 use std::io;
 use std::marker::PhantomData;
+use std::thread;
+use std::time::{Duration, Instant};
 
 pub struct MyCobotOperator<T: Connection> {
     connection: T,
@@ -128,11 +130,11 @@ impl<T: Connection> MyCobotOperator<T> {
         .concat();
         self.write_command(Command::SEND_COORD, &command_data)
     }
-    pub fn send_coords(&mut self, coords: &[f64], speed: u8, mode: u8) -> Result<(), io::Error> {
+    pub fn send_coords(&mut self, coords: &[f64], speed: u8, mode: Mode) -> Result<(), io::Error> {
         let command_data = [
             &encode_int16_vec(&coords_to_int_vec(coords))[..],
             &[speed],
-            &[mode],
+            &[mode as u8],
         ]
         .concat();
         self.write_command(Command::SEND_COORDS, &command_data)
@@ -275,7 +277,12 @@ impl<T: Connection> MyCobotOperator<T> {
         let res = self.write_command_and_receive(Command::GET_DIGITAL_INPUT, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
     }
-    pub fn set_pwm_output(&mut self, channel: u8, frequency: i16, pin_val: u8) -> Result<(), io::Error> {
+    pub fn set_pwm_output(
+        &mut self,
+        channel: u8,
+        frequency: i16,
+        pin_val: u8,
+    ) -> Result<(), io::Error> {
         let command_data = [&[channel], &encode_int16(frequency)[..], &[pin_val]].concat();
         self.write_command(Command::SET_PWM_OUTPUT, &command_data)
     }
@@ -305,6 +312,42 @@ impl<T: Connection> MyCobotOperator<T> {
         let command_data = [pin_no];
         let res = self.write_command_and_receive(Command::GET_BASIC_INPUT, &command_data)?;
         Ok(if res.is_empty() { -1 } else { res[0] as i32 })
+    }
+    pub fn sync_send_angles(
+        &mut self,
+        degrees: &[f64],
+        speed: u8,
+        timeout_secs: f64,
+    ) -> Result<(), io::Error> {
+        let start = Instant::now();
+        self.send_angles(degrees, speed)?;
+        while start.elapsed().as_secs_f64() < timeout_secs {
+            if self.is_in_angle_position(degrees)? == 1 {
+                break;
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+        Ok(())
+    }
+    pub fn sync_send_coords(
+        &mut self,
+        coords: &[f64],
+        speed: u8,
+        mode: Mode,
+        timeout_secs: f64,
+    ) -> Result<(), io::Error> {
+        let start = Instant::now();
+        self.send_coords(coords, speed, mode)?;
+        while start.elapsed().as_secs_f64() < timeout_secs {
+            if self.is_in_coord_position(coords)? == 1 {
+                break;
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+        Ok(())
+    }
+    pub fn wait(timeout_secs: f64) {
+        thread::sleep(Duration::from_secs_f64(timeout_secs));
     }
 }
 
