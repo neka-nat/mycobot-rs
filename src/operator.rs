@@ -96,6 +96,12 @@ impl<T: Connection> MyCobotOperator<T> {
         Ok(res.into_iter().map(int_to_angle).collect::<Vec<_>>())
     }
     pub fn send_angle(&mut self, id: Angle, degree: f64, speed: u8) -> Result<(), io::Error> {
+        if !check_degree(degree) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Outbound degree",
+            ));
+        }
         let command_data = [
             &[id as u8],
             &encode_int16(angle_to_int(degree))[..],
@@ -105,6 +111,12 @@ impl<T: Connection> MyCobotOperator<T> {
         self.write_command(Command::SEND_ANGLE, &command_data)
     }
     pub fn send_angles(&mut self, degrees: &[f64], speed: u8) -> Result<(), io::Error> {
+        if !check_degrees(degrees) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Outbound degrees",
+            ));
+        }
         let command_data = [
             &encode_int16_vec(
                 &degrees

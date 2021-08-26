@@ -73,3 +73,14 @@ pub fn decode_int16_vec(data: &[u8]) -> Vec<i16> {
     }
     res
 }
+
+const MINANGLE: f64 = -190.0;
+const MAXANGLE: f64 = 190.0;
+
+pub fn check_degree(degree: f64) -> bool {
+    MINANGLE <= degree && degree <= MAXANGLE
+}
+
+pub fn check_degrees(degrees: &[f64]) -> bool {
+    degrees.iter().all(|deg| check_degree(*deg))
+}
