@@ -1,3 +1,6 @@
+use num_traits::FromPrimitive;
+
+#[derive(Clone)]
 pub enum Angle {
     J1 = 1,
     J2 = 2,
@@ -7,6 +10,7 @@ pub enum Angle {
     J6 = 6,
 }
 
+#[derive(Clone)]
 pub enum Coord {
     X = 1,
     Y = 2,
@@ -16,23 +20,52 @@ pub enum Coord {
     Rz = 6,
 }
 
+impl FromPrimitive for Coord {
+    fn from_i64(n: i64) -> Option<Coord> {
+        match n {
+            1 => Some(Coord::X),
+            2 => Some(Coord::Y),
+            3 => Some(Coord::Z),
+            4 => Some(Coord::Rx),
+            5 => Some(Coord::Ry),
+            6 => Some(Coord::Rz),
+            _ => None,
+        }
+    }
+    fn from_u64(n: u64) -> Option<Coord> {
+        match n {
+            1 => Some(Coord::X),
+            2 => Some(Coord::Y),
+            3 => Some(Coord::Z),
+            4 => Some(Coord::Rx),
+            5 => Some(Coord::Ry),
+            6 => Some(Coord::Rz),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum Direction {
     Decrease = 0,
     Increase = 1,
 }
 
+#[derive(Clone)]
 pub enum Mode {
     Normal = 0,
     Angular = 1,
     Linear = 2,
 }
 
+#[derive(Clone)]
 pub enum PinMode {
     Input = 0,
     Output = 1,
     InputPullup = 2,
 }
 
+#[derive(Clone)]
 pub enum GripperState {
     Open = 0,
     Close = 1,

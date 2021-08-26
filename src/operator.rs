@@ -134,6 +134,12 @@ impl<T: Connection> MyCobotOperator<T> {
         Ok(int_vec_to_coords(&res))
     }
     pub fn send_coord(&mut self, id: Coord, coord: f64, speed: u8) -> Result<(), io::Error> {
+        if !check_coord(id.clone(), coord) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Outbound coord",
+            ));
+        }
         let command_data = [
             &[id as u8 - 1],
             &encode_int16(coord_to_int(coord))[..],
@@ -143,6 +149,12 @@ impl<T: Connection> MyCobotOperator<T> {
         self.write_command(Command::SEND_COORD, &command_data)
     }
     pub fn send_coords(&mut self, coords: &[f64], speed: u8, mode: Mode) -> Result<(), io::Error> {
+        if !check_coords(coords) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Outbound coords",
+            ));
+        }
         let command_data = [
             &encode_int16_vec(&coords_to_int_vec(coords))[..],
             &[speed],

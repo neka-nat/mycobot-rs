@@ -16,3 +16,4 @@ keywords = ["robotics", "mycobot"]
 [dependencies]
 serialport = "4.0.1"
 byteorder = "1.4.3"
+num-traits = "0.2"

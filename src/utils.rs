@@ -1,4 +1,6 @@
+use super::common::*;
 use byteorder::{BigEndian, ByteOrder};
+use num_traits::FromPrimitive;
 
 pub fn angle_to_int(degree: f64) -> i16 {
     (degree * 100.0) as i16
@@ -77,10 +79,29 @@ pub fn decode_int16_vec(data: &[u8]) -> Vec<i16> {
 const MINANGLE: f64 = -190.0;
 const MAXANGLE: f64 = 190.0;
 
+pub fn check_range(v: f64, minv: f64, maxv: f64) -> bool {
+    minv <= v && v <= maxv
+}
+
 pub fn check_degree(degree: f64) -> bool {
-    MINANGLE <= degree && degree <= MAXANGLE
+    check_range(degree, MINANGLE, MAXANGLE)
 }
 
 pub fn check_degrees(degrees: &[f64]) -> bool {
     degrees.iter().all(|deg| check_degree(*deg))
+}
+
+pub fn check_coord(id: Coord, coord: f64) -> bool {
+    if (id as u8) < 3 {
+        true
+    } else {
+        check_range(coord, -180.0, 180.0)
+    }
+}
+
+pub fn check_coords(coords: &[f64]) -> bool {
+    coords
+        .iter()
+        .enumerate()
+        .all(|(i, c)| check_coord(Coord::from_u32(i as u32 + 1).unwrap(), *c))
 }
