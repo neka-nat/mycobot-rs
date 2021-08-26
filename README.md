@@ -14,3 +14,7 @@ pub fn main() -> Result<(), io::Error> {
     Ok(())
 }
 ```
+
+## Demo
+
+![send_coords](https://raw.githubusercontent.com/neka-nat/mycobot-rs/master/assets/send_coords.gif)
