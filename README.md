@@ -6,11 +6,11 @@ MyCobot API in Rust.
 
 ```rust
 use mycobot::*;
-use std::io;
+use anyhow::Result;
 
-pub fn main() -> Result<(), io::Error> {
+pub fn main() -> Result<()> {
     let mut mycobot = MyCobotSerialOperator::new("/dev/ttyUSB0", 115200);
-    mycobot.send_angles(&vec![0.0, 0.0, 0.0, 0.0, 30.0, 0.0], 50)?;
+    mycobot.send_angles(&[0.0, 0.0, 0.0, 0.0, 30.0, 0.0], 50)?;
     Ok(())
 }
 ```

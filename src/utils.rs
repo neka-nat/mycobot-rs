@@ -1,6 +1,8 @@
 use super::common::*;
+use anyhow::{Error, Result};
 use byteorder::{BigEndian, ByteOrder};
 use num_traits::FromPrimitive;
+use std::convert::TryInto;
 
 pub fn angle_to_int(degree: f64) -> i16 {
     (degree * 100.0) as i16
@@ -18,7 +20,7 @@ pub fn int_to_coord(val: i16) -> f64 {
     (val as f64) / 10.0
 }
 
-pub fn coords_to_int_vec(coords: &[f64]) -> Vec<i16> {
+pub fn coords_to_int_vec(coords: &[f64; 6]) -> Vec<i16> {
     coords
         .iter()
         .enumerate()
@@ -32,7 +34,7 @@ pub fn coords_to_int_vec(coords: &[f64]) -> Vec<i16> {
         .collect()
 }
 
-pub fn int_vec_to_coords(vals: &[i16]) -> Vec<f64> {
+pub fn int_vec_to_coords(vals: &[i16]) -> Result<[f64; 6]> {
     vals.iter()
         .enumerate()
         .map(|(i, v)| {
@@ -42,7 +44,9 @@ pub fn int_vec_to_coords(vals: &[i16]) -> Vec<f64> {
                 int_to_angle(*v)
             }
         })
-        .collect()
+        .collect::<Vec<_>>()[..]
+        .try_into()
+        .map_err(Error::msg)
 }
 
 pub fn encode_int16(data: i16) -> [u8; 2] {
