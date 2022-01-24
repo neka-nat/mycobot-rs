@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["mycobot"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/num-traits/0.2/num_traits/cast/trait.FromPrimitive.html\" title=\"trait num_traits::cast::FromPrimitive\">FromPrimitive</a> for <a class=\"enum\" href=\"mycobot/enum.Coord.html\" title=\"enum mycobot::Coord\">Coord</a>","synthetic":false,"types":["mycobot::common::Coord"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

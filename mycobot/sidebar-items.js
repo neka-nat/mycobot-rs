@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Angle",""],["Coord",""],["Direction",""],["GripperState",""],["Mode",""],["PinMode",""]],"struct":[["Command",""],["MyCobotOperator",""],["Serial",""]],"trait":[["Connection",""]],"type":[["MyCobotSerialOperator","MyCobot Rust API"],["Result","`Result<T, Error>`"]]});
