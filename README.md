@@ -6,7 +6,6 @@ MyCobot API in Rust.
 
 ```rust
 use mycobot::*;
-use anyhow::Result;
 
 pub fn main() -> Result<()> {
     let mut mycobot = MyCobotSerialOperator::new("/dev/ttyUSB0", 115200);
@@ -16,5 +15,12 @@ pub fn main() -> Result<()> {
 ```
 
 ## Demo
+
+Run example.
+
+```sh
+sudo chmod 666 /dev/ttyUSB0
+cargo run --release --example send_coords /dev/ttyUSB0
+```
 
 ![send_coords](https://raw.githubusercontent.com/neka-nat/mycobot-rs/master/assets/send_coords.gif)

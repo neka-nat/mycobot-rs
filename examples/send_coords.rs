@@ -1,4 +1,3 @@
-use anyhow::Result;
 use mycobot::*;
 use std::env;
 
