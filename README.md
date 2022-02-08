@@ -1,7 +1,7 @@
 # mycobot-rs
 [![crates.io](https://img.shields.io/crates/v/mycobot.svg)](https://crates.io/crates/mycobot)
 
-MyCobot API in Rust.
+myCobot API in Rust.
 ## Getting started
 
 ```rust
